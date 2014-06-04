@@ -4,27 +4,30 @@
  * Implements hook_exit().
  */
 function collector_api_exit($destination = NULL) {
-  if (variable_get('collector_enabled', TRUE) === FALSE) {
-    return FALSE;
-  }
-  else {
-    global $user;
-    $path = $_GET['q'];
-    $query = drupal_http_build_query(drupal_get_query_parameters());
-    if ($query != '') {
-      $path .= '?' . $query;
+  if (!drupal_is_cli()) {
+    if (variable_get('collector_enabled', TRUE) === FALSE) {
+      return FALSE;
     }
-    $data = _collector_api_basic_stats();
+    else {
+      global $user;
+      $path = $_GET['q'];
+      $query = drupal_http_build_query(drupal_get_query_parameters());
+      if ($query != '') {
+        $path .= '?' . $query;
+      }
+      $data = _collector_api_basic_stats();
 
-    drupal_alter('collector_api_data', $data);
-    $entity = entity_create('collector_item', array(
-      'uid' => $user->uid,
-      'created' => REQUEST_TIME,
-      'session_id' => !empty($_COOKIE['collector_session']) ? $_COOKIE['collector_session'] : '',
-      'path' => $path,
-      'data' => serialize($data),
-    ));
-    entity_save('collector_item', $entity);
+      drupal_alter('collector_api_data', $data);
+
+      $entity = entity_create('collector_item', array(
+        'uid' => $user->uid,
+        'created' => REQUEST_TIME,
+        'session_id' => !empty($_COOKIE['collector_session']) ? $_COOKIE['collector_session'] : '',
+        'path' => $path,
+        'data' => serialize($data),
+      ));
+      entity_save('collector_item', $entity);
+    }
   }
 }
 
@@ -81,5 +84,6 @@ function _collector_api_basic_stats() {
     'hostname' => ip_address(),
     'timer' => (int) timer_read('page'),
   );
+
   return $data;
 }
