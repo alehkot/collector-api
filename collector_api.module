@@ -1,0 +1,85 @@
+<?php
+
+/**
+ * Implements hook_exit().
+ */
+function collector_api_exit($destination = NULL) {
+  if (variable_get('collector_enabled', TRUE) === FALSE) {
+    return FALSE;
+  }
+  else {
+    global $user;
+    $path = $_GET['q'];
+    $query = drupal_http_build_query(drupal_get_query_parameters());
+    if ($query != '') {
+      $path .= '?' . $query;
+    }
+    $data = _collector_api_basic_stats();
+
+    drupal_alter('collector_api_data', $data);
+    $entity = entity_create('collector_item', array(
+      'uid' => $user->uid,
+      'created' => REQUEST_TIME,
+      'session_id' => !empty($_COOKIE['collector_session']) ? $_COOKIE['collector_session'] : '',
+      'path' => $path,
+      'data' => serialize($data),
+    ));
+    entity_save('collector_item', $entity);
+  }
+}
+
+/**
+ * Implements hook_menu().
+ */
+function collector_api_menu() {
+  $items['collector'] = array(
+    'title' => 'Collector',
+    'page callback' => 'collector_page',
+    'page arguments' => array(),
+    'access callback' => TRUE,
+    'type' => MENU_CALLBACK,
+  );
+
+  return $items;
+}
+
+/**
+ * Implements hook_boot().
+ */
+function collector_api_boot() {
+  if (!isset($_COOKIE['collector_session'])) {
+    setcookie('collector_session', drupal_hash_base64(uniqid(mt_rand(), TRUE)), 0);
+  }
+}
+
+/**
+ * Implements hook_entity_info().
+ */
+function collector_api_entity_info() {
+  $return = array(
+    'collector_item' => array(
+      'label' => t('Collector item'),
+      'controller class' => 'EntityAPIController',
+      'base table' => 'collector_item',
+      'fieldable' => FALSE,
+      'entity keys' => array(
+        'id' => 'cid',
+      ),
+      'bundles' => array(),
+    ),
+  );
+
+  return $return;
+}
+
+/**
+ * Populates data with some basic statistics including page render time.
+ */
+function _collector_api_basic_stats() {
+  $data = array(
+    'title' => truncate_utf8(strip_tags(drupal_get_title()), 255),
+    'hostname' => ip_address(),
+    'timer' => (int) timer_read('page'),
+  );
+  return $data;
+}

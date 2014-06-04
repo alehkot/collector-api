@@ -1,0 +1,6 @@
+name = Collector API
+description = Stores pages visits information.
+version = 1.0
+package = Utility
+core = 7.x
+dependencies[] = entity

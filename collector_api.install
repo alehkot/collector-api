@@ -1,0 +1,83 @@
+<?php
+
+/**
+ * @file
+ * Drupal installation routines.
+ */
+
+/**
+ * Implements hook_schema().
+ */
+function collector_api_schema() {
+  $schema['collector_item'] = array(
+    'description' => 'Stores collector items.',
+    'fields' => array(
+      'cid' => array(
+        'type' => 'serial',
+        'not null' => TRUE,
+        'description' => 'Primary Key: Unique collector item ID.',
+        'unsigned' => TRUE,
+      ),
+      'uid' => array(
+        'description' => 'User ID.',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'session_id' => array(
+        'description' => 'Unique session ID of the user.',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'path' => array(
+        'description' => 'Full path to the page.',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'created' => array(
+        'description' => 'The Unix timestamp when the entity was created.',
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'data' => array(
+        'description' => 'Saved data.',
+        'type' => 'blob',
+        'not null' => FALSE,
+        'size' => 'big',
+        'translatable' => TRUE,
+      ),
+    ),
+    'primary key' => array('cid'),
+    'indexes' => array(
+      'session_id' => array(
+        'uid',
+        'session_id',
+      ),
+      'created' => array(
+        'created',
+      ),
+    ),
+  );
+
+  return $schema;
+}
+
+/**
+ * Implements hook_install().
+ */
+function collector_api_install() {
+  variable_set('collector_enable', TRUE);
+}
+
+/**
+ * Implements hook_uninstall().
+ */
+function collector_api_uninstall() {
+  variable_del('collector_enable');
+}
